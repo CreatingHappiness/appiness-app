@@ -1,0 +1,10 @@
+{
+  "name": "Creating Happiness App",
+  "short_name": "Happiness",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F6F3EE",
+  "theme_color": "#2F6B57",
+  "icons": [{ "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }]
+}
