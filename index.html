@@ -34,9 +34,20 @@
       });
     });
 
+    // Anmeldung merken: Die App im iframe verliert ihren Speicher auf dem Handy oft nach Stunden.
+    // Diese Seite merkt sich den Schlüssel und gibt ihn beim Start als ?k=… an die App zurück.
+    window.addEventListener("message", function (e) {
+      if (!e.data || e.data.type !== "cdg-token") return;
+      if (!/(^|\.)(googleusercontent\.com|google\.com)$/.test(new URL(e.origin).hostname)) return;
+      try { if (e.data.token) localStorage.setItem("cdg_k", String(e.data.token)); else localStorage.removeItem("cdg_k"); } catch (x) {}
+    });
+
     window.addEventListener("DOMContentLoaded", function () {
-      // Parameter wie ?k=… (Login) an die App weiterreichen
+      // Parameter wie ?k=… (Login) an die App weiterreichen; fehlt er, den gemerkten nehmen
       var q = location.search || "";
+      if (!/[?&]k=/.test(q)) {
+        try { var k = localStorage.getItem("cdg_k"); if (k) q += (q ? "&" : "?") + "k=" + encodeURIComponent(k); } catch (x) {}
+      }
       document.getElementById("app").src = APP_URL + q;
     });
   </script>
