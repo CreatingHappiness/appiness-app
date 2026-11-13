@@ -38,8 +38,12 @@
     // Diese Seite merkt sich den Schlüssel und gibt ihn beim Start als ?k=… an die App zurück.
     window.addEventListener("message", function (e) {
       if (!e.data || e.data.type !== "cdg-token") return;
-      if (!/(^|\.)(googleusercontent\.com|google\.com)$/.test(new URL(e.origin).hostname)) return;
-      try { if (e.data.token) localStorage.setItem("cdg_k", String(e.data.token)); else localStorage.removeItem("cdg_k"); } catch (x) {}
+      var h = ""; try { h = new URL(e.origin).hostname; } catch (x) {}
+      if (e.origin !== "null" && !/(^|\.)(googleusercontent\.com|google\.com)$/.test(h)) return;
+      var saved = false;
+      try { if (e.data.token) localStorage.setItem("cdg_k", String(e.data.token)); else localStorage.removeItem("cdg_k"); saved = !!localStorage.getItem("cdg_k") === !!e.data.token; } catch (x) {}
+      // Rückmeldung an die App (sie zeigt unten an, ob das Merken klappt)
+      try { e.source.postMessage({ type: "cdg-ack", ver: 2, saved: saved }, "*"); } catch (x) {}
     });
 
     window.addEventListener("DOMContentLoaded", function () {
