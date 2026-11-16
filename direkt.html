@@ -1690,7 +1690,7 @@ function nav() {
   var n = unreadCount();
   var b = function (p, label, svg) {
     var on = S.page === p || (p === 'start' && (S.page === 'tile' || /^(inv|hr|sp|cl|br|bh|tk|fb|apA|au|ag|ob)/.test(S.page)));
-    return '<button class="' + (on ? 'on' : '') + '" onclick="go(\'' + p + '\')">' + svg + label + (p === 'mitteilungen' && n ? '<span class="dot">' + n + '</span>' : '') + '</button>';
+    return '<button class="' + (on ? 'on' : '') + '" onclick="' + (p === 'mitteilungen' ? 'S.msgF=\'\';' : '') + 'go(\'' + p + '\')">' + svg + label + (p === 'mitteilungen' && n ? '<span class="dot">' + n + '</span>' : '') + '</button>';
   };
   return '<nav class="nav">' +
     b('start', 'Start', '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9H3z"/><path d="M9 20v-6h6v6"/></svg>') +
@@ -1836,7 +1836,7 @@ function pageTile() {
 
 function pageMsgs() {
   var me = S.me;
-  var list = S.msgs.map(function (m) {
+  var list = (S.msgF === 'news' ? S.msgs.filter(isNews) : S.msgs).map(function (m) {
     var open = S.open[m.id];
     return '<div class="card msg' + (m.gelesen ? '' : ' unread') + '">' +
       '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;cursor:pointer" onclick="openMsg(\'' + esc(m.id) + '\')">' +
@@ -1849,8 +1849,8 @@ function pageMsgs() {
       (open && me.can.lesestatus ? '<button class="btn ghost" style="height:40px" onclick="showStatus(\'' + esc(m.id) + '\')">Lesestatus ansehen</button>' : '') +
       '</div>';
   }).join('');
-  return '<div class="top"><h1>Mitteilungen</h1>' + (me.can.mitteilungSenden ? '<button class="btn" style="width:auto;height:42px" onclick="go(\'neu\')">+ Neu</button>' : '') + '</div>' +
-    '<div style="display:flex;flex-direction:column;gap:10px">' + (list || '<div class="card" style="padding:18px" class="muted">Noch keine Mitteilungen.</div>') + '</div>';
+  return '<div class="top"><h1>' + (S.msgF === 'news' ? 'Neuigkeiten' : 'Mitteilungen') + '</h1>' + (me.can.mitteilungSenden ? '<button class="btn" style="width:auto;height:42px" onclick="go(\'neu\')">+ Neu</button>' : '') + '</div>' +
+    (S.msgF === 'news' ? '<button class="btn ghost" style="height:40px;margin-bottom:10px" onclick="S.msgF=\'\';render()">Alle Meldungen (Glocke) anzeigen</button>' : '') + '<div style="display:flex;flex-direction:column;gap:10px">' + (list || '<div class="card" style="padding:18px" class="muted">Noch keine Mitteilungen.</div>') + '</div>';
 }
 
 function pageNew() {
@@ -4765,17 +4765,18 @@ function brArriveRender(x) {
 var TMD = { list: null, people: [], heute: '', kannNeu: false, tab: 'kommend', edit: null, err: '', next: null, nextBusy: false, q: '' };
 var TM_ARTEN = ['Feedbackgespräch', 'Probezeit', 'Jahresgespräch', 'FK-Meeting', 'Marketing-Meeting', 'Sonstiges'], TM_ORTE = ['CôDung', 'RC CP', 'Itaefong', 'Telefon'], TM_GR = ['Alle', 'Service', 'Bar', 'Küche', 'Führung'];
 function tmDay(d) { var x = new Date(d + 'T12:00:00'); return ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][x.getDay()] + ' ' + d.slice(8, 10) + '.' + d.slice(5, 7) + '.'; }
+function isNews(m) { return !m.pers && !m.go && !/^(Schichtplan |Event: |Sperrtag: |Termin\b|Hinweis: |Neue Aufgabe: )/.test(m.titel); }
 function apNews() {
   // Vers2-133: Neuigkeiten = nur, was über „Mitteilung senden“ (Führung) kommt – keine System- oder persönlichen Meldungen (die stehen bei der Glocke)
   if (TMD.next === null && !TMD.nextBusy) { TMD.nextBusy = true; call('tmNext').then(function (r) { TMD.next = r.items || []; render(); }).catch(function () { TMD.next = []; }); }
-  var rows = (S.msgs || []).filter(function (m) { return !m.pers && !m.go && !/^(Schichtplan |Event: |Sperrtag: |Termin\b|Hinweis: |Neue Aufgabe: )/.test(m.titel); }).slice(0, 3).map(function (m) {
+  var rows = (S.msgs || []).filter(isNews).slice(0, 3).map(function (m) {
     return '<button onclick="S.open[\'' + esc(m.id) + '\']=true;go(\'mitteilungen\')"><span class="vtx"><b' + (m.gelesen ? ' style="font-weight:600"' : '') + '>' + (m.gelesen ? '' : '● ') + esc(m.titel) + '</b><span>' + esc(m.datum) + ' · von ' + esc(m.von) + '</span></span>' + chev() + '</button>';
   }).join('');
   var tms = (TMD.next || []).map(function (t) {
     return '<button onclick="openTM(\'tmL\')"><span class="vtx"><b>📅 ' + esc(t.titel) + '</b><span>' + esc(tmDay(t.datum)) + (t.uhrzeit ? ', ' + esc(t.uhrzeit) + ' Uhr' : '') + (t.ort ? ' · ' + esc(t.ort) : '') + (t.meine ? '' : t.vonId === S.me.id ? '' : ' · bitte antworten') + '</span></span>' + chev() + '</button>';
   }).join('');
   if (!rows && !tms) return '';
-  return '<section class="vsec"><h2>Neuigkeiten</h2><div class="vlist">' + tms + rows + '<button onclick="go(\'mitteilungen\')"><span class="vtx"><b>Alle Mitteilungen</b><span>auch bereits gelesene</span></span>' + chev() + '</button></div></section>';
+  return '<section class="vsec"><h2>Neuigkeiten</h2><div class="vlist">' + tms + rows + '<button onclick="S.msgF=\'news\';go(\'mitteilungen\')"><span class="vtx"><b>Alle Neuigkeiten</b><span>auch bereits gelesene</span></span>' + chev() + '</button></div></section>';
 }
 function openTM(page, id) {
   TMD.err = '';
