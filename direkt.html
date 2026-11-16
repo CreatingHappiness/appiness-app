@@ -4766,8 +4766,9 @@ var TMD = { list: null, people: [], heute: '', kannNeu: false, tab: 'kommend', e
 var TM_ARTEN = ['Feedbackgespräch', 'Probezeit', 'Jahresgespräch', 'FK-Meeting', 'Marketing-Meeting', 'Sonstiges'], TM_ORTE = ['CôDung', 'RC CP', 'Itaefong', 'Telefon'], TM_GR = ['Alle', 'Service', 'Bar', 'Küche', 'Führung'];
 function tmDay(d) { var x = new Date(d + 'T12:00:00'); return ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][x.getDay()] + ' ' + d.slice(8, 10) + '.' + d.slice(5, 7) + '.'; }
 function apNews() {
+  // Vers2-133: Neuigkeiten = nur, was über „Mitteilung senden“ (Führung) kommt – keine System- oder persönlichen Meldungen (die stehen bei der Glocke)
   if (TMD.next === null && !TMD.nextBusy) { TMD.nextBusy = true; call('tmNext').then(function (r) { TMD.next = r.items || []; render(); }).catch(function () { TMD.next = []; }); }
-  var rows = (S.msgs || []).filter(function (m) { return /^(Hinweis:|Neue Aufgabe:)/.test(m.titel) || (!m.pers && !/^Schichtplan /.test(m.titel)); }).slice(0, 3).map(function (m) {
+  var rows = (S.msgs || []).filter(function (m) { return !m.pers && !m.go && !/^(Schichtplan |Event: |Sperrtag: |Termin\b|Hinweis: |Neue Aufgabe: )/.test(m.titel); }).slice(0, 3).map(function (m) {
     return '<button onclick="S.open[\'' + esc(m.id) + '\']=true;go(\'mitteilungen\')"><span class="vtx"><b' + (m.gelesen ? ' style="font-weight:600"' : '') + '>' + (m.gelesen ? '' : '● ') + esc(m.titel) + '</b><span>' + esc(m.datum) + ' · von ' + esc(m.von) + '</span></span>' + chev() + '</button>';
   }).join('');
   var tms = (TMD.next || []).map(function (t) {
