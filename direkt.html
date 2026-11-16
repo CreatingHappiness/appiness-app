@@ -5514,7 +5514,7 @@ function openZP(page, arg) {
 function zpLoad(force) {
   if (force) { ZPD.data = null; render(); }
   ZPD.err = '';
-  return call('zpAll').then(function (d) {
+  return call('zpAll', { fresh: !!force }).then(function (d) {
     zpSetData(d); render();
   }).catch(function (e) { ZPD.err = e.message; render(); });
 }
@@ -6317,7 +6317,7 @@ function zpSave() {
     render(); window.scrollTo(0, 0); toast('Wird gespeichert …');
     call(act, payload).then(function (r) {
       ZPD.sel[k] = r.id; ZPD.q[k] = '';
-      return call('zpAll').then(function (d) { zpSetData(d); ZPD.syncing = Math.max(0, ZPD.syncing - 1); render(); toast('Gespeichert ✓'); });
+      return call('zpAll', { fresh: true }).then(function (d) { zpSetData(d); ZPD.syncing = Math.max(0, ZPD.syncing - 1); render(); toast('Gespeichert ✓'); });
     }).catch(function (e) {
       ZPD.syncing = Math.max(0, ZPD.syncing - 1);
       F.busy = false; F.version = undefined; F.err = 'Nicht gespeichert: ' + e.message;
